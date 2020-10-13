@@ -4,8 +4,8 @@ Created on Oct 12, 2016
 @author: mwittie
 '''
 
-import network
-import link
+import network_2 as network
+import link_2 as link
 import threading
 from time import sleep
 from rprint import print
