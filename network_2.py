@@ -164,7 +164,7 @@ class Router:
 						frag_pkt = NetworkPacket(p.dst_addr, buffer[:max_load], p.pkt_id, frag_flag, frag_offset)
 						print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
 							  % (self, p, i, i, self.out_intf_L[i].mtu))
-						self.out_intf_L[i].put(p.to_byte_S())
+						self.out_intf_L[i].put(frag_pkt.to_byte_S())
 
 						buffer = buffer[max_load:]
 						frag_offset += len(buffer[:max_load])

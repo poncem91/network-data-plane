@@ -13,7 +13,7 @@ from rprint import print
 
 ## configuration parameters
 router_queue_size = 0  # 0 means unlimited
-simulation_time = 1  # give the network sufficient time to transfer all packets before quitting
+simulation_time = 2  # give the network sufficient time to transfer all packets before quitting
 
 if __name__ == '__main__':
 	object_L = []  # keeps track of objects, so we can kill their threads
