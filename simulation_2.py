@@ -23,7 +23,7 @@ if __name__ == '__main__':
 	object_L.append(client)
 	server = network.Host(2)
 	object_L.append(server)
-	router_a = network.Router(name='A', intf_count=1, max_queue_size=router_queue_size, mtu=50)
+	router_a = network.Router(name='A', intf_count=1, max_queue_size=router_queue_size, mtu=30)
 	object_L.append(router_a)
 	
 	# create a Link Layer to keep track of links between network nodes
@@ -43,8 +43,8 @@ if __name__ == '__main__':
 	# create some send events
 	#for i in range(3):
 	#	client.udt_send(2, 'Sample data %d' % i)
-	client.udt_send(2, "01234567890123456789012345678901234567890123456789012345678901234567890123456END")
-	
+	client.udt_send(2, "01234567890123456789012345678901234567890123456789012345678901234567890123456789END")
+
 	# give the network sufficient time to transfer all packets before quitting
 	sleep(simulation_time)
 	

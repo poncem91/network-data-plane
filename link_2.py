@@ -36,12 +36,12 @@ class Link:
         pkt_S = self.in_intf.get()
         if pkt_S is None:
             return # return if no packet to transfer
-        if len(pkt_S) > self.in_intf.mtu:
-            print('%s: packet "%s" length greater than the from interface MTU (%d)' % (self, pkt_S, self.out_intf.mtu))
-            return  # return without transmitting if packet too big
-        if len(pkt_S) > self.out_intf.mtu:
-            print('%s: packet "%s" length greater than the to interface MTU (%d)' % (self, pkt_S, self.out_intf.mtu))
-            return # return without transmitting if packet too big
+        #if len(pkt_S) > self.in_intf.mtu:
+        #    print('%s: packet "%s" length greater than the from interface MTU (%d)' % (self, pkt_S, self.in_intf.mtu))
+        #    return  # return without transmitting if packet too big
+        #if len(pkt_S) > self.out_intf.mtu:
+        #    print('%s: packet "%s" length greater than the to interface MTU (%d)' % (self, pkt_S, self.out_intf.mtu))
+        #    return # return without transmitting if packet too big
         # otherwise transmit the packet
         try:
             self.out_intf.put(pkt_S)
@@ -70,7 +70,7 @@ class LinkLayer:
     ## transfer a packet across all links
     def transfer(self):
         for link in self.link_L:
-            link.tx_pkt()
+                link.tx_pkt()
                 
     ## thread target for the network to keep transmitting data across links
     def run(self):
