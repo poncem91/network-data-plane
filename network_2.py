@@ -88,6 +88,7 @@ class Host:
         self.in_intf_L = [Interface()]
         self.out_intf_L = [Interface()]
         self.stop = False  # for thread termination
+        self.frag_pkt_buffer = {}
 
     ## called when printing the object
     def __str__(self):
@@ -101,18 +102,27 @@ class Host:
         buffer = data_S
 
         while len(buffer) > 0:
-            pkt_id = self.addr + self.id_count
+            pkt_id = str(self.addr) + str(self.id_count)
             p = NetworkPacket(dst_addr, buffer[:max_load], pkt_id)
             print('%s: sending packet "%s" on the out interface with mtu=%d' % (self, p, self.out_intf_L[0].mtu))
             self.out_intf_L[0].put(p.to_byte_S())  # send packets always enqueued successfully
-            pkt_id += 1
+            self.id_count += 1
             buffer = buffer[max_load:]
 
     ## receive packet from the network layer
     def udt_receive(self):
         pkt_S = self.in_intf_L[0].get()
         if pkt_S is not None:
-            print('%s: received packet "%s" on the in interface' % (self, pkt_S))
+            frag_pkt = NetworkPacket.from_byte_S(pkt_S)
+            pkt_id = int(frag_pkt.pkt_id)
+            if pkt_id in self.frag_pkt_buffer.keys():
+                self.frag_pkt_buffer[pkt_id].append(frag_pkt.data_S)
+            else:
+                self.frag_pkt_buffer[pkt_id] = [frag_pkt.data_S]
+            if frag_pkt.frag_flag == "0":
+                frag_list = self.frag_pkt_buffer[pkt_id]
+                self.frag_pkt_buffer[pkt_id] = []
+                print('%s: received packet "%s" on the in interface' % (self, ''.join(frag_list)))
 
     ## thread target for the host to keep receiving data
     def run(self):
@@ -166,7 +176,7 @@ class Router:
                             frag_flag = 0
                         frag_pkt = NetworkPacket(p.dst_addr, buffer[:max_load], p.pkt_id, frag_flag, frag_offset)
                         print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
-                              % (self, p, i, i, self.out_intf_L[i].mtu))
+                              % (self, frag_pkt, i, i, self.out_intf_L[i].mtu))
                         self.out_intf_L[i].put(frag_pkt.to_byte_S())
 
                         buffer = buffer[max_load:]
