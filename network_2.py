@@ -121,7 +121,7 @@ class Host:
                 self.frag_pkt_buffer[pkt_id] = [frag_pkt.data_S]
             if frag_pkt.frag_flag == "0":
                 frag_list = self.frag_pkt_buffer[pkt_id]
-                self.frag_pkt_buffer[pkt_id] = []
+                del self.frag_pkt_buffer[pkt_id]
                 print('%s: received packet "%s" on the in interface' % (self, ''.join(frag_list)))
 
     ## thread target for the host to keep receiving data
