@@ -30,10 +30,7 @@ class Interface:
         self.queue.put(pkt, block)
 
 
-## Implements a network layer packet (different from the RDT packet 
-# from programming assignment 2).
-# NOTE: This class will need to be extended to for the packet to include
-# the fields necessary for the completion of this assignment.
+## Implements a network layer packet
 class NetworkPacket:
     ## packet encoding lengths
     dst_addr_S_length = 5
@@ -71,8 +68,10 @@ class NetworkPacket:
         dst_addr = int(byte_S[0: NetworkPacket.dst_addr_S_length])
         pkt_id = byte_S[
                  NetworkPacket.dst_addr_S_length:(NetworkPacket.dst_addr_S_length + NetworkPacket.pkt_id_S_length)]
-        frag_flag = byte_S[(NetworkPacket.dst_addr_S_length + NetworkPacket.pkt_id_S_length):(NetworkPacket.dst_addr_S_length + NetworkPacket.pkt_id_S_length + NetworkPacket.frag_flag_S_length)]
-        frag_offset = byte_S[(NetworkPacket.dst_addr_S_length + NetworkPacket.pkt_id_S_length + NetworkPacket.frag_flag_S_length):NetworkPacket.header_length]
+        frag_flag = byte_S[(NetworkPacket.dst_addr_S_length + NetworkPacket.pkt_id_S_length):(
+                    NetworkPacket.dst_addr_S_length + NetworkPacket.pkt_id_S_length + NetworkPacket.frag_flag_S_length)]
+        frag_offset = byte_S[(
+                                         NetworkPacket.dst_addr_S_length + NetworkPacket.pkt_id_S_length + NetworkPacket.frag_flag_S_length):NetworkPacket.header_length]
         data_S = byte_S[NetworkPacket.header_length:]
         return self(dst_addr, data_S, pkt_id, frag_flag, frag_offset)
 
@@ -101,6 +100,7 @@ class Host:
         max_load = self.out_intf_L[0].mtu - NetworkPacket.header_length
         buffer = data_S
 
+        # splits up buffer into pieces to be able to forward them through the host's out interface
         while len(buffer) > 0:
             pkt_id = str(self.addr) + str(self.id_count)
             p = NetworkPacket(dst_addr, buffer[:max_load], pkt_id)
@@ -112,6 +112,8 @@ class Host:
     ## receive packet from the network layer
     def udt_receive(self):
         pkt_S = self.in_intf_L[0].get()
+        # if there's an incoming packet start building up fragmented packets into a buffer until all fragments have
+        # been received, then print packet that and clear said buffer
         if pkt_S is not None:
             frag_pkt = NetworkPacket.from_byte_S(pkt_S)
             pkt_id = int(frag_pkt.pkt_id)
@@ -142,7 +144,7 @@ class Router:
     ##@param name: friendly router name for debugging
     # @param intf_count: the number of input and output interfaces
     # @param max_queue_size: max queue length (passed to Interface)
-    # @param mtu: MTU for all interfaces
+    # @param routing_table: routing table for router
     def __init__(self, name, intf_count, max_queue_size, routing_table):
         self.stop = False  # for thread termination
         self.name = name
@@ -166,19 +168,24 @@ class Router:
                 # if packet exists make a forwarding decision
                 if pkt_S is not None:
                     p = NetworkPacket.from_byte_S(pkt_S)  # parse a packet out
-                    fwd_out_intf = self.routing_table.get(int(p.dst_addr))
+                    fwd_out_intf = self.routing_table.get(int(p.dst_addr))  # lookup forwarding out interface num
                     if fwd_out_intf is None:
                         print("There is no forwarding information for such destination.")
                         continue
+                    # calculate max load of data interface can handle
                     max_load = self.out_intf_L[fwd_out_intf].mtu - NetworkPacket.header_length
-                    frag_flag = 1
-                    frag_offset = 0
-                    buffer = p.data_S
 
+                    # begin fragmentation if current packet's data length exceeds max load
                     if len(buffer) > max_load:
+                        frag_flag = 1
+                        frag_offset = 0
+                        buffer = p.data_S
+
+                        # iterates over buffer sending packet fragments until end of packet
                         while len(buffer) > 0:
-                            if len(buffer) <= max_load:
+                            if len(buffer) <= max_load:  # checks if last fragment in packet
                                 frag_flag = 0
+                            # creates fragment packet and forwards fragment
                             frag_pkt = NetworkPacket(p.dst_addr, buffer[:max_load], p.pkt_id, frag_flag, frag_offset)
                             print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
                                   % (self, frag_pkt, i, fwd_out_intf, self.out_intf_L[fwd_out_intf].mtu))
@@ -186,14 +193,12 @@ class Router:
 
                             buffer = buffer[max_load:]
                             frag_offset += len(buffer[:max_load])
+
+                    # otherwise just forward packet
                     else:
                         print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
                               % (self, p, i, fwd_out_intf, self.out_intf_L[fwd_out_intf].mtu))
                         self.out_intf_L[fwd_out_intf].put(p.to_byte_S())
-
-                # HERE you will need to implement a lookup into the
-                # forwarding table to find the appropriate outgoing interface
-                # for now we assume the outgoing interface is also i
 
             except queue.Full:
                 print('%s: packet "%s" lost on interface %d' % (self, p, i))

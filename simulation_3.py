@@ -15,7 +15,7 @@ router_queue_size = 0  # 0 means unlimited
 simulation_time = 7  # give the network sufficient time to transfer all packets before quitting
 
 if __name__ == '__main__':
-
+    # routing tables that allow querying by destination address as the key, which stores router's out interface value
     routing_table_A = {3: 0, 4: 1}
     routing_table_B = {3: 0}
     routing_table_C = {4: 0}

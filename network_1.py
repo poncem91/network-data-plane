@@ -30,10 +30,7 @@ class Interface:
 		self.queue.put(pkt, block)
 
 
-## Implements a network layer packet (different from the RDT packet 
-# from programming assignment 2).
-# NOTE: This class will need to be extended to for the packet to include
-# the fields necessary for the completion of this assignment.
+## Implements a network layer packet
 class NetworkPacket:
 	## packet encoding lengths
 	dst_addr_S_length = 5
@@ -82,6 +79,7 @@ class Host:
 	# @param dst_addr: destination address for the packet
 	# @param data_S: data being transmitted to the network layer
 	def udt_send(self, dst_addr, data_S):
+		# splits up packet into two pieces to be able to forward them through the host's out interface
 		packet_len = len(data_S) // 2
 		p = NetworkPacket(dst_addr, data_S[:packet_len])
 		print('%s: sending packet "%s" on the out interface with mtu=%d' % (self, p, self.out_intf_L[0].mtu))
@@ -114,7 +112,6 @@ class Router:
 	##@param name: friendly router name for debugging
 	# @param intf_count: the number of input and output interfaces
 	# @param max_queue_size: max queue length (passed to Interface)
-	# @param mtu: MTU for all interfaces
 	def __init__(self, name, intf_count, max_queue_size):
 		self.stop = False  # for thread termination
 		self.name = name
@@ -137,9 +134,6 @@ class Router:
 				# if packet exists make a forwarding decision
 				if pkt_S is not None:
 					p = NetworkPacket.from_byte_S(pkt_S)  # parse a packet out
-					# HERE you will need to implement a lookup into the
-					# forwarding table to find the appropriate outgoing interface
-					# for now we assume the outgoing interface is also i
 					print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
 					      % (self, p, i, i, self.out_intf_L[i].mtu))
 					self.out_intf_L[i].put(p.to_byte_S())
