@@ -143,12 +143,13 @@ class Router:
     # @param intf_count: the number of input and output interfaces
     # @param max_queue_size: max queue length (passed to Interface)
     # @param mtu: MTU for all interfaces
-    def __init__(self, name, intf_count, max_queue_size):
+    def __init__(self, name, intf_count, max_queue_size, routing_table):
         self.stop = False  # for thread termination
         self.name = name
         # create a list of interfaces
         self.in_intf_L = [Interface(max_queue_size) for _ in range(intf_count)]
         self.out_intf_L = [Interface(max_queue_size) for _ in range(intf_count)]
+        self.routing_table = routing_table
 
     ## called when printing the object
     def __str__(self):
@@ -165,22 +166,30 @@ class Router:
                 # if packet exists make a forwarding decision
                 if pkt_S is not None:
                     p = NetworkPacket.from_byte_S(pkt_S)  # parse a packet out
-
-                    max_load = self.out_intf_L[i].mtu - NetworkPacket.header_length
+                    fwd_out_intf = self.routing_table.get(int(p.dst_addr))
+                    if fwd_out_intf is None:
+                        print("There is no forwarding information for such destination.")
+                        continue
+                    max_load = self.out_intf_L[fwd_out_intf].mtu - NetworkPacket.header_length
                     frag_flag = 1
                     frag_offset = 0
                     buffer = p.data_S
 
-                    while len(buffer) > 0:
-                        if len(buffer) <= max_load:
-                            frag_flag = 0
-                        frag_pkt = NetworkPacket(p.dst_addr, buffer[:max_load], p.pkt_id, frag_flag, frag_offset)
-                        print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
-                              % (self, frag_pkt, i, i, self.out_intf_L[i].mtu))
-                        self.out_intf_L[i].put(frag_pkt.to_byte_S())
+                    if len(buffer) > max_load:
+                        while len(buffer) > 0:
+                            if len(buffer) <= max_load:
+                                frag_flag = 0
+                            frag_pkt = NetworkPacket(p.dst_addr, buffer[:max_load], p.pkt_id, frag_flag, frag_offset)
+                            print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
+                                  % (self, frag_pkt, i, fwd_out_intf, self.out_intf_L[fwd_out_intf].mtu))
+                            self.out_intf_L[fwd_out_intf].put(frag_pkt.to_byte_S())
 
-                        buffer = buffer[max_load:]
-                        frag_offset += len(buffer[:max_load])
+                            buffer = buffer[max_load:]
+                            frag_offset += len(buffer[:max_load])
+                    else:
+                        print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
+                              % (self, p, i, fwd_out_intf, self.out_intf_L[fwd_out_intf].mtu))
+                        self.out_intf_L[fwd_out_intf].put(p.to_byte_S())
 
                 # HERE you will need to implement a lookup into the
                 # forwarding table to find the appropriate outgoing interface
