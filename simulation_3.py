@@ -12,7 +12,7 @@ from rprint import print
 
 ## configuration parameters
 router_queue_size = 0  # 0 means unlimited
-simulation_time = 7  # give the network sufficient time to transfer all packets before quitting
+simulation_time = 5  # give the network sufficient time to transfer all packets before quitting
 
 if __name__ == '__main__':
     # routing tables that allow querying by destination address as the key, which stores router's out interface value
@@ -62,8 +62,8 @@ if __name__ == '__main__':
         t.start()
 
     # create some send events
-    client_1.udt_send(3, "STARTC1-0123456789-ABCDEFGHIJKLMNOPQRSTUVWXYZ-9876543210-ENDC1")
-    client_2.udt_send(4, "STARTC2-0123456789-9876543210-ABCDEFGHIJKLMNOPQRSTUVWXYZ-ENDC2")
+    client_1.udt_send(3, "STARTC1-ABCDEFGHIJKLMNOPQRSTUVWXYZ-0123456789-ABCDEFGHIJKLMNOPQRSTUVWXYZ-ENDC1")
+    client_2.udt_send(4, "STARTC2-ABCDEFGHIJKLMNOPQRSTUVWXYZ-0123456789-ABCDEFGHIJKLMNOPQRSTUVWXYZ-ENDC2")
 
     # give the network sufficient time to transfer all packets before quitting
     sleep(simulation_time)

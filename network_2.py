@@ -33,10 +33,10 @@ class Interface:
 ## Implements a network layer packet
 class NetworkPacket:
     ## packet encoding lengths
-    dst_addr_S_length = 5
-    pkt_id_S_length = 6
+    dst_addr_S_length = 2
+    pkt_id_S_length = 3
     frag_flag_S_length = 1
-    frag_offset_S_length = 5
+    frag_offset_S_length = 3
     header_length = dst_addr_S_length + pkt_id_S_length + frag_flag_S_length + frag_offset_S_length
 
     ##@param dst_addr: address of the destination host
@@ -95,17 +95,17 @@ class Host:
     # @param dst_addr: destination address for the packet
     # @param data_S: data being transmitted to the network layer
     def udt_send(self, dst_addr, data_S):
-        max_load = self.out_intf_L[0].mtu - NetworkPacket.header_length
-        buffer = data_S
-
-        # splits up buffer into pieces to be able to forward them through the host's out interface
-        while len(buffer) > 0:
-            pkt_id = str(self.addr) + str(self.id_count)
-            p = NetworkPacket(dst_addr, buffer[:max_load], pkt_id)
-            print('%s: sending packet "%s" on the out interface with mtu=%d' % (self, p, self.out_intf_L[0].mtu))
-            self.out_intf_L[0].put(p.to_byte_S())  # send packets always enqueued successfully
-            self.id_count += 1
-            buffer = buffer[max_load:]
+        # splits up packet into two pieces to be able to forward them through the host's out interface
+        packet_len = len(data_S) // 2
+        pkt_id = str(self.addr) + str(self.id_count)
+        p = NetworkPacket(dst_addr, data_S[:packet_len], pkt_id)
+        print('%s: sending packet "%s" on the out interface with mtu=%d' % (self, p, self.out_intf_L[0].mtu))
+        self.out_intf_L[0].put(p.to_byte_S())  # send packets always enqueued successfully
+        self.id_count += 1
+        pkt_id = str(self.addr) + str(self.id_count)
+        p = NetworkPacket(dst_addr, data_S[packet_len:], pkt_id)
+        print('%s: sending packet "%s" on the out interface with mtu=%d' % (self, p, self.out_intf_L[0].mtu))
+        self.out_intf_L[0].put(p.to_byte_S())  # send packets always enqueued successfully
 
     ## receive packet from the network layer
     def udt_receive(self):
